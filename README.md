@@ -5,6 +5,8 @@
 
 ![1776985236997](image/README/1776985236997.png)
 
+![1776986754756](image/README/1776986754756.png)
+
 
 
 A natural-language question-answering system over a university database, built with **LangGraph**, **SQLAlchemy**, **OpenAI GPT-4o**, and a **Gradio** UI.
