@@ -1,5 +1,12 @@
 # University QA Agent
 
+
+![1776985152316](image/README/1776985152316.png)
+
+![1776985236997](image/README/1776985236997.png)
+
+
+
 A natural-language question-answering system over a university database, built with **LangGraph**, **SQLAlchemy**, **OpenAI GPT-4o**, and a **Gradio** UI.
 
 Ask questions like:
@@ -274,3 +281,8 @@ If you were bringing this system to production, you would need to address:
 | **Deployment** | Containerise with Docker; store `OPENAI_API_KEY` and `LANGSMITH_API_KEY` in a secrets manager (AWS Secrets Manager, GCP Secret Manager); use managed PostgreSQL |
 | **Cost control** | Cache frequent query→SQL pairs in Redis; use `gpt-4o-mini` for simple queries and route to `gpt-4o` only for complex ones |
 | **Schema changes** | `get_schema()` is dynamic (reads live DB via `inspect()`), so schema changes are picked up automatically — no redeploy needed for the prompt |
+
+
+==========================================================
+
+

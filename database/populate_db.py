@@ -19,10 +19,26 @@ TEACHERS = [
 ]
 
 STUDENTS = [
-    "Noa Bar", "Ethan Katz", "Maya Gold", "Liam Ben-David", "Sara Mor",
-    "Yuval Peled", "Tamar Azulay", "Omer Dayan", "Hila Friedman", "Ariel Weiss",
-    "Roni Shani", "Ido Harel", "Lior Tal", "Shira Naor", "Gal Avraham",
-    "Dana Ron", "Eitan Segal", "Noam Ziv", "Talia Rubin", "Yoav Edri",
+    "Noa Bar",
+    "Ethan Katz",
+    "Maya Gold",
+    "Liam Ben-David",
+    "Sara Mor",
+    "Yuval Peled",
+    "Tamar Azulay",
+    "Omer Dayan",
+    "Hila Friedman",
+    "Ariel Weiss",
+    "Roni Shani",
+    "Ido Harel",
+    "Lior Tal",
+    "Shira Naor",
+    "Gal Avraham",
+    "Dana Ron",
+    "Eitan Segal",
+    "Noam Ziv",
+    "Talia Rubin",
+    "Yoav Edri",
 ]
 
 COURSES = [
@@ -39,21 +55,21 @@ COURSES = [
 SEMESTERS = ["Fall 2024", "Spring 2025", "Fall 2025"]
 
 OFFERINGS = [
-    ("Introduction to AI",     "Dr. Alice Cohen",   "Fall 2024"),
-    ("Introduction to AI",     "Dr. Alice Cohen",   "Fall 2025"),
-    ("Database Systems",       "Prof. Ben Levi",    "Fall 2024"),
-    ("Database Systems",       "Prof. Ben Levi",    "Spring 2025"),
-    ("Operating Systems",      "Prof. Ben Levi",    "Fall 2025"),
-    ("Linear Algebra",         "Dr. Clara Stein",   "Fall 2024"),
-    ("Linear Algebra",         "Dr. Clara Stein",   "Spring 2025"),
-    ("Data Structures",        "Prof. David Roth",  "Fall 2024"),
-    ("Data Structures",        "Prof. David Roth",  "Fall 2025"),
-    ("Machine Learning",       "Dr. Alice Cohen",   "Spring 2025"),
-    ("Machine Learning",       "Dr. Emma Shapiro",  "Fall 2025"),
-    ("Computer Networks",      "Prof. David Roth",  "Spring 2025"),
-    ("Computer Networks",      "Prof. David Roth",  "Fall 2025"),
-    ("Software Engineering",   "Dr. Emma Shapiro",  "Spring 2025"),
-    ("Software Engineering",   "Dr. Emma Shapiro",  "Fall 2025"),
+    ("Introduction to AI", "Dr. Alice Cohen", "Fall 2024"),
+    ("Introduction to AI", "Dr. Alice Cohen", "Fall 2025"),
+    ("Database Systems", "Prof. Ben Levi", "Fall 2024"),
+    ("Database Systems", "Prof. Ben Levi", "Spring 2025"),
+    ("Operating Systems", "Prof. Ben Levi", "Fall 2025"),
+    ("Linear Algebra", "Dr. Clara Stein", "Fall 2024"),
+    ("Linear Algebra", "Dr. Clara Stein", "Spring 2025"),
+    ("Data Structures", "Prof. David Roth", "Fall 2024"),
+    ("Data Structures", "Prof. David Roth", "Fall 2025"),
+    ("Machine Learning", "Dr. Alice Cohen", "Spring 2025"),
+    ("Machine Learning", "Dr. Emma Shapiro", "Fall 2025"),
+    ("Computer Networks", "Prof. David Roth", "Spring 2025"),
+    ("Computer Networks", "Prof. David Roth", "Fall 2025"),
+    ("Software Engineering", "Dr. Emma Shapiro", "Spring 2025"),
+    ("Software Engineering", "Dr. Emma Shapiro", "Fall 2025"),
 ]
 
 
