@@ -8,7 +8,7 @@ import pytest
 from langchain_core.messages import AIMessage, BaseMessage
 
 from database.db import Database
-from database.seed import seed
+from database.populate_db import seed
 
 
 class MockChatModel:

@@ -1,7 +1,21 @@
 [project]
 name = "ai-qa-university"
 version = "0.1.0"
-description = "Add your description here"
+description = "LangGraph QA agent over a university SQLite database"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "sqlalchemy>=2.0",
+    "langgraph>=1.0",
+    "langchain-openai>=0.3",
+    "python-dotenv>=1.0",
+    "gradio>=5.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from database.db import Database
-from database.seed import COURSES, OFFERINGS, STUDENTS, TEACHERS, seed
+from database.populate_db import COURSES, OFFERINGS, STUDENTS, TEACHERS, seed
 
 
 @pytest.fixture()

@@ -1,6 +1,6 @@
 """Populate the database with deterministic sample data via the ORM.
 
-Run directly:  python -m database.seed
+Run directly:  python -m database.populate_db
 """
 
 from __future__ import annotations
@@ -119,4 +119,4 @@ def seed(database: Database, *, reset: bool = True) -> None:
 if __name__ == "__main__":
     db = Database()
     seed(db)
-    print(f"Seeded {db.url}")
+    print(f"Database populated: {db.url}")

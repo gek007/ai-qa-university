@@ -21,7 +21,7 @@ from agent.graph import build_graph
 from agent.tracing import setup_tracing
 from database.db import DEFAULT_URL, Database
 from database.models import Teacher
-from database.seed import seed
+from database.populate_db import seed
 
 EXAMPLE_QUESTIONS = [
     "How many students are there in total?",
