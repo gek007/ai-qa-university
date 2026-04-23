@@ -13,6 +13,9 @@ automatically. LangSmith tracing is enabled when `LANGSMITH_API_KEY`
 
 from __future__ import annotations
 
+import logging
+import os
+
 import gradio as gr
 from langchain_openai import ChatOpenAI
 from sqlalchemy import select
@@ -22,6 +25,9 @@ from agent.tracing import setup_tracing
 from database.db import DEFAULT_URL, Database
 from database.models import Teacher
 from database.populate_db import seed
+from log_config import configure
+
+logger = logging.getLogger(__name__)
 
 EXAMPLE_QUESTIONS = [
     "How many students are there in total?",
@@ -38,11 +44,15 @@ def _ensure_seeded(database: Database) -> None:
     with database.session() as s:
         already_seeded = s.execute(select(Teacher).limit(1)).first() is not None
     if not already_seeded:
+        logger.info("No teachers found; running initial populate_db (reset=False)")
         seed(database, reset=False)
+    else:
+        logger.info("Database already has data; skipping seed")
 
 
 def _build_runtime() -> tuple[object, bool]:
     """Wire tracing, database, LLM, and graph once at startup."""
+    configure()
     tracing_on = setup_tracing()
     database = Database(DEFAULT_URL)
     _ensure_seeded(database)
@@ -58,7 +68,13 @@ def ask(question: str) -> tuple[str, str, list]:
     """Invoke the graph for a single question and unpack its final state."""
     if not question or not question.strip():
         return "", "", []
-    state = GRAPH.invoke({"question": question.strip()})
+    q = question.strip()
+    logger.info("User question: %r", q[:500])
+    try:
+        state = GRAPH.invoke({"question": q})
+    except Exception:
+        logger.exception("Graph invocation failed")
+        raise
     return (
         state.get("answer", ""),
         state.get("sql", ""),
@@ -107,4 +123,5 @@ def _build_ui() -> gr.Blocks:
 
 
 if __name__ == "__main__":
+    logger.info("Starting Gradio UI (OpenAI model: gpt-4o, LOG_LEVEL=%s)", os.getenv("LOG_LEVEL", "INFO"))
     _build_ui().launch()

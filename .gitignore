@@ -26,6 +26,9 @@ htmlcov/
 .env.*
 !.env.example
 
+# --- Application logs (rotating files under logs/) ---
+logs/
+
 # --- Database files ---
 data/
 *.db

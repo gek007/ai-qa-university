@@ -11,12 +11,14 @@ Schema is fetched once at build time and embedded into the SQL prompt.
 
 from __future__ import annotations
 
+import logging
 from typing import Optional
 
 from langchain_core.language_models import BaseChatModel
 from langgraph.graph import END, START, StateGraph
 
 from agent.nodes import (
+    MAX_RETRIES,
     make_format_answer_node,
     make_generate_sql_node,
     make_run_sql_node,
@@ -24,6 +26,8 @@ from agent.nodes import (
 )
 from agent.state import AgentState
 from database.db import Database
+
+logger = logging.getLogger(__name__)
 
 
 def _default_llm() -> BaseChatModel:
@@ -59,4 +63,9 @@ def build_graph(database: Database, llm: Optional[BaseChatModel] = None):
     )
     builder.add_edge("format_answer", END)
 
-    return builder.compile()
+    compiled = builder.compile()
+    logger.debug(
+        "LangGraph compiled: generate_sql -> run_sql -> format_answer (SQL retries < %d)",
+        MAX_RETRIES,
+    )
+    return compiled

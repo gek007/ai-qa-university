@@ -7,11 +7,14 @@ required variables so problems fail loudly at startup.
 
 from __future__ import annotations
 
+import logging
 import os
 
 from dotenv import load_dotenv
 
 DEFAULT_PROJECT = "university-qa"
+
+logger = logging.getLogger(__name__)
 
 
 def setup_tracing() -> bool:
@@ -27,6 +30,10 @@ def setup_tracing() -> bool:
 
     api_key = os.getenv("LANGSMITH_API_KEY") or os.getenv("LANGCHAIN_API_KEY")
     if not api_key:
+        logger.warning(
+            "LangSmith API key not set; tracing disabled. "
+            "Set LANGSMITH_API_KEY or LANGCHAIN_API_KEY in .env to enable."
+        )
         return False
 
     os.environ.setdefault("LANGSMITH_TRACING", "true")
@@ -38,4 +45,8 @@ def setup_tracing() -> bool:
         os.getenv("LANGCHAIN_PROJECT", DEFAULT_PROJECT),
     )
     os.environ.setdefault("LANGCHAIN_PROJECT", os.environ["LANGSMITH_PROJECT"])
+    logger.info(
+        "LangSmith tracing enabled: project=%r",
+        os.environ["LANGSMITH_PROJECT"],
+    )
     return True

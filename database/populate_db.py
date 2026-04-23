@@ -5,10 +5,14 @@ Run directly:  python -m database.populate_db
 
 from __future__ import annotations
 
+import logging
+
 from sqlalchemy.orm import Session
 
 from database.db import Database
 from database.models import Course, CourseOffering, Enrollment, Student, Teacher
+
+logger = logging.getLogger(__name__)
 
 TEACHERS = [
     "Dr. Alice Cohen",
@@ -96,7 +100,10 @@ def _enrollments_plan() -> list[tuple[int, int, float | None]]:
 def seed(database: Database, *, reset: bool = True) -> None:
     """Populate (optionally resetting) the database with sample data."""
     if reset:
+        logger.warning("Resetting database (drop + recreate + seed)")
         database.drop_schema()
+    else:
+        logger.info("Seeding into existing schema (no drop)")
     database.create_schema()
 
     with database.session() as session:  # type: Session
@@ -131,8 +138,25 @@ def seed(database: Database, *, reset: bool = True) -> None:
         session.add_all(enrollments)
         session.commit()
 
+    logger.info(
+        "Population complete: %d teachers, %d students, %d courses, %d offerings, %d enrollments",
+        len(TEACHERS),
+        len(STUDENTS),
+        len(COURSES),
+        len(OFFERINGS),
+        len(_enrollments_plan()),
+    )
+
 
 if __name__ == "__main__":
-    db = Database()
-    seed(db)
-    print(f"Database populated: {db.url}")
+    from log_config import configure
+
+    configure()
+    try:
+        db = Database()
+        seed(db)
+    except Exception:
+        logger.exception("Failed to populate database")
+        raise
+    else:
+        print(f"Database populated: {db.url}")

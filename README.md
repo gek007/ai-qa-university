@@ -230,6 +230,48 @@ All tests use an **in-memory SQLite database** and a **mock LLM** — no real AP
 
 ---
 
+## Logging
+
+Configuration is in [`log_config.py`](log_config.py). It runs when you start `app.py` or `python -m database.populate_db`. If something else (e.g. `pytest`) already attached handlers to the root logger, `configure()` does nothing.
+
+### Where output goes
+
+| Destination | Default | Env vars |
+|-------------|---------|----------|
+| **Console** | On, **`stdout`** | `LOG_TO_CONSOLE` (`true`/`false`), `LOG_STREAM` (`stdout` or `stderr`) |
+| **Rotating files** | Off | `LOG_TO_FILE` (`true`/`false`), `LOG_FILE` (path under the project, default `logs/ai-qa-university.log`) |
+
+**Rotating file behavior:** `logging.handlers.RotatingFileHandler` — when the active file reaches `LOG_MAX_BYTES` (default 1,048,576 bytes), it is rolled to `.1`, previous `.1` → `.2`, etc. `LOG_BACKUP_COUNT` (default **10**) is how many such backup files are kept, after which the oldest is deleted. The `logs/` directory is created automatically and is **gitignored**.
+
+### Log level
+
+| Level   | What you will see (examples) |
+|--------|------------------------------|
+| **INFO** | App startup, user questions, SQL execution recovery attempts, LangSmith status, population summary |
+| **WARNING** | Dropping the schema, blocking non-SELECT SQL, max SQL retries, missing LangSmith key |
+| **ERROR** | Uncaught exceptions (e.g. `populate_db` main failure) |
+| **DEBUG** | Per-query row counts, engine URL, graph compile message, `generate_sql` question preview |
+
+Example `.env`:
+
+```dotenv
+LOG_LEVEL=DEBUG
+LOG_TO_CONSOLE=true
+LOG_STREAM=stdout
+LOG_TO_FILE=true
+LOG_FILE=logs/ai-qa-university.log
+LOG_MAX_BYTES=1048576
+LOG_BACKUP_COUNT=10
+```
+
+Or via the shell:
+
+```bash
+LOG_LEVEL=DEBUG LOG_TO_FILE=true uv run python app.py
+```
+
+---
+
 ## Design decisions
 
 ### DB-agnostic agent
