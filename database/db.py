@@ -7,7 +7,9 @@ ever calls `get_schema()` and `execute()` -- swapping the underlying engine
 
 from __future__ import annotations
 
+import os
 import re
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy import Engine, create_engine, inspect, text
@@ -15,7 +17,25 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from database.models import Base
 
-DEFAULT_URL = "sqlite:///university.db"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DATA_DIR = PROJECT_ROOT / "data"
+
+
+def _default_url() -> str:
+    """Resolve the default DB URL.
+
+    Priority:
+        1. `DATABASE_URL` env var, if set.
+        2. `sqlite:///<project>/data/university.db` (creates `data/` on demand).
+    """
+    env_url = os.getenv("DATABASE_URL")
+    if env_url:
+        return env_url
+    DATA_DIR.mkdir(exist_ok=True)
+    return f"sqlite:///{(DATA_DIR / 'university.db').as_posix()}"
+
+
+DEFAULT_URL = _default_url()
 
 _SELECT_ONLY_RE = re.compile(r"^\s*(select|with)\b", re.IGNORECASE)
 

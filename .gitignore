@@ -8,3 +8,10 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Local environment / secrets
+.env
+
+# Database files
+data/
+*.db
