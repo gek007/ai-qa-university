@@ -1,4 +1,7 @@
-def main():
+"""Default package entrypoint (placeholder)."""
+
+
+def main() -> None:
     print("Hello from ai-qa-university!")
 
 

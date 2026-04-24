@@ -1,7 +1,6 @@
-"""Populate the database with deterministic sample data via the ORM.
+"""ORM seed: deterministic teachers, students, courses, offerings, enrollments.
 
-Run directly:  python -m database.populate_db
-"""
+CLI: `python -m database.populate_db`."""
 
 from __future__ import annotations
 
@@ -78,11 +77,7 @@ OFFERINGS = [
 
 
 def _enrollments_plan() -> list[tuple[int, int, float | None]]:
-    """Return a deterministic list of (student_idx, offering_idx, grade) tuples.
-
-    Grade distribution is spread so aggregation queries produce meaningful,
-    predictable results. Some enrollments have no grade (in-progress).
-    """
+    """Deterministic (student, offering, grade) rows; `None` grades simulate in-progress work."""
     plan: list[tuple[int, int, float | None]] = []
     base_grades = [55, 62, 70, 74, 78, 82, 85, 88, 91, 95]
 
@@ -98,7 +93,7 @@ def _enrollments_plan() -> list[tuple[int, int, float | None]]:
 
 
 def seed(database: Database, *, reset: bool = True) -> None:
-    """Populate (optionally resetting) the database with sample data."""
+    """Insert sample rows; with `reset`, drop and recreate schema first."""
     if reset:
         logger.warning("Resetting database (drop + recreate + seed)")
         database.drop_schema()

@@ -1,13 +1,6 @@
-"""Compile the LangGraph QA graph.
+"""Build the QA LangGraph: generate_sql → run_sql → (retry or) format_answer → END.
 
-The graph is intentionally small:
-
-    START -> generate_sql -> run_sql --(ok)--> format_answer -> END
-                  ^                  |
-                  |--(error, retry)--+
-
-Schema is fetched once at build time and embedded into the SQL prompt.
-"""
+Schema is read once at compile time and baked into the SQL system prompt."""
 
 from __future__ import annotations
 
@@ -31,21 +24,16 @@ logger = logging.getLogger(__name__)
 
 
 def _default_llm() -> BaseChatModel:
+    """`ChatOpenAI` at temperature 0; used when `build_graph` is called without an `llm`."""
     from langchain_openai import ChatOpenAI
 
     return ChatOpenAI(model="gpt-4o", temperature=0)
 
 
 def build_graph(database: Database, llm: Optional[BaseChatModel] = None):
-    """Build and compile the QA LangGraph.
+    """Compile the graph: generate SQL, run it, maybe retry, then format the answer.
 
-    Args:
-        database: the DB facade the agent will query.
-        llm: a chat model (defaults to `ChatOpenAI(model="gpt-4o")`).
-
-    Returns:
-        A compiled LangGraph ready to `.invoke({"question": ...})`.
-    """
+    Uses `llm` if given, else `_default_llm()`. Call `.invoke` with a `question` and optional state."""
     chat_model = llm if llm is not None else _default_llm()
     schema = database.get_schema()
 

@@ -1,10 +1,4 @@
-"""SQLAlchemy ORM models for the university domain.
-
-Entities:
-    Teacher, Student, Course        -- core entities (each has a name)
-    CourseOffering                  -- a Course taught by a Teacher in a semester
-    Enrollment                      -- a Student taking a CourseOffering with a grade
-"""
+"""University schema: teachers, students, courses, offerings, enrollments (SQLAlchemy 2)."""
 
 from __future__ import annotations
 
@@ -59,7 +53,7 @@ class Course(Base):
 
 
 class CourseOffering(Base):
-    """A specific instance of a Course, taught by a Teacher in a given semester."""
+    """One course run: teacher, semester, enrollments."""
 
     __tablename__ = "course_offerings"
 
@@ -82,7 +76,7 @@ class CourseOffering(Base):
 
 
 class Enrollment(Base):
-    """A Student's enrollment in a CourseOffering, including the grade received."""
+    """Student on an offering; optional numeric `grade` (e.g. in progress)."""
 
     __tablename__ = "enrollments"
 

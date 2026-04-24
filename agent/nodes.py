@@ -1,8 +1,7 @@
-"""LangGraph node implementations for the QA agent.
+"""LangGraph node factories for the QA flow.
 
-Each `make_*_node` is a factory that closes over the dependencies the node
-needs (LLM, schema, database). This keeps nodes pure functions of state
-while staying trivially testable.
+Each `make_*_node` returns a state-to-update callable with the LLM, schema, and
+DB closed over so graph wiring and tests stay straightforward.
 """
 
 from __future__ import annotations
@@ -20,14 +19,13 @@ from database.db import Database
 
 logger = logging.getLogger(__name__)
 
-# `retries` is incremented inside `run_sql` on every failure. As soon as
-# `retries >= MAX_RETRIES`, `should_retry` routes to `format_answer` and the
-# error-aware branch of that node explains the failure to the user.
+# `run_sql` increments `retries` on failure; at this cap, `should_retry` sends
+# `format_answer` down the user-facing error branch instead of `generate_sql`.
 MAX_RETRIES = 2
 
 
 def _clean_sql(text: str) -> str:
-    """Strip common LLM artefacts (markdown fences, trailing semicolon)."""
+    """Return executable SQL: strip markdown fences and a trailing semicolon."""
     s = text.strip()
     if s.startswith("```"):
         lines = [ln for ln in s.splitlines() if not ln.strip().startswith("```")]
@@ -40,11 +38,12 @@ def _clean_sql(text: str) -> str:
 def make_generate_sql_node(
     llm: BaseChatModel, schema: str
 ) -> Callable[[AgentState], dict]:
-    """Produce a node that asks the LLM for SQL given the state's question."""
+    """Build a node that maps the question (and prior failure, if any) to SQL."""
 
     system = SystemMessage(content=prompts.SQL_SYSTEM_PROMPT.format(schema=schema))
 
     def generate_sql(state: AgentState) -> dict:
+        """Emit `sql` and clear `error`; on retry, include last SQL and error in the user prompt."""
         previous_error = state.get("error")
         if previous_error:
             logger.warning(
@@ -70,13 +69,14 @@ def make_generate_sql_node(
 
 
 def make_run_sql_node(database: Database) -> Callable[[AgentState], dict]:
-    """Produce a node that executes the state's SQL against the database."""
+    """Build a node that executes `state['sql']` and tracks failures for routing."""
 
     def run_sql(state: AgentState) -> dict:
+        """Execute SQL: rows on success, or empty results with `retries` + `error` (for LLM retry, not re-raised)."""
         try:
             rows = database.execute(state["sql"])
             return {"results": rows, "error": None}
-        except Exception as exc:  # noqa: BLE001 -- we want to feed errors back to the LLM
+        except Exception as exc:  # noqa: BLE001 — feed driver/DB failures into state for the LLM
             nxt = state.get("retries", 0) + 1
             logger.info(
                 "run_sql: execution failed, retry may follow (attempt %d, max %d): %s: %s",
@@ -95,11 +95,12 @@ def make_run_sql_node(database: Database) -> Callable[[AgentState], dict]:
 
 
 def make_format_answer_node(llm: BaseChatModel) -> Callable[[AgentState], dict]:
-    """Produce a node that formats the final NL answer (or an error message)."""
+    """Build a node that produces the final natural-language `answer` or a terminal error message."""
 
     system = SystemMessage(content=prompts.ANSWER_SYSTEM_PROMPT)
 
     def format_answer(state: AgentState) -> dict:
+        """After max SQL failures, use the error-style prompt; otherwise ground the answer in `results`."""
         if state.get("error") and state.get("retries", 0) >= MAX_RETRIES:
             logger.warning(
                 "format_answer: using user-facing error path (after %d failed SQL attempt(s))",
@@ -121,11 +122,7 @@ def make_format_answer_node(llm: BaseChatModel) -> Callable[[AgentState], dict]:
 
 
 def should_retry(state: AgentState) -> str:
-    """Routing function after `run_sql`.
-
-    Returns the name of the next node: retry `generate_sql` on recoverable
-    errors, otherwise proceed to `format_answer`.
-    """
+    """Graph router after `run_sql`: next node name (`format_answer` or `generate_sql`)."""
     if not state.get("error"):
         return "format_answer"
     if state.get("retries", 0) < MAX_RETRIES:

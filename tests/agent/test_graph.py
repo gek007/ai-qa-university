@@ -1,8 +1,4 @@
-"""End-to-end tests for the compiled LangGraph QA graph.
-
-The LLM is always mocked so no real API calls happen. The database is a
-seeded in-memory SQLite -- so the SQL branch really executes.
-"""
+"""Graph e2e tests: mock LLM, real in-memory SQL execution."""
 
 from __future__ import annotations
 
@@ -50,7 +46,7 @@ def test_retry_path_recovers_from_bad_sql(db: Database) -> None:
 
 
 def test_max_retries_routes_to_error_answer(db: Database) -> None:
-    # One SQL response per attempt (`MAX_RETRIES` total), then one answer response.
+    # `MAX_RETRIES` bad SQLs, then the final user-facing answer string.
     bad_sqls = ["SELECT nope FROM nowhere"] * MAX_RETRIES
     final_answer = "Sorry, I couldn't answer that question. Please rephrase."
     llm = MockChatModel([*bad_sqls, final_answer])
@@ -64,7 +60,7 @@ def test_max_retries_routes_to_error_answer(db: Database) -> None:
 
 
 def test_graph_handles_complex_join_question(db: Database) -> None:
-    """The agent can resolve a realistic multi-table join question."""
+    """Multi-table SQL against seeded data returns one aggregated row."""
     complex_sql = (
         "SELECT c.title AS course, AVG(e.grade) AS avg_grade "
         "FROM enrollments e "
@@ -89,7 +85,7 @@ def test_graph_handles_complex_join_question(db: Database) -> None:
 
 
 def test_graph_only_requires_question_in_input(db: Database) -> None:
-    """Graph should accept just a question -- other state is populated by nodes."""
+    """Invoke with only `question` still produces `answer` downstream."""
     llm = MockChatModel(["SELECT 1 AS x", "The answer is 1."])
     graph = build_graph(db, llm=llm)
 

@@ -1,4 +1,4 @@
-"""Shared fixtures and a minimal mock chat model for agent tests."""
+"""Agent tests: `MockChatModel` + seeded in-memory `Database` fixture."""
 
 from __future__ import annotations
 
@@ -12,11 +12,7 @@ from database.populate_db import seed
 
 
 class MockChatModel:
-    """Tiny stand-in for a LangChain chat model.
-
-    Returns canned responses in order and records every call it receives so
-    tests can assert on the exact prompts reaching the LLM.
-    """
+    """FIFO canned `AIMessage`s; `calls` captures each `invoke` for assertions."""
 
     def __init__(self, responses: Iterable[str]) -> None:
         self._responses: list[str] = list(responses)
@@ -31,7 +27,7 @@ class MockChatModel:
 
 @pytest.fixture()
 def db() -> Database:
-    """An in-memory SQLite DB seeded with deterministic sample data."""
+    """In-memory SQLite + `seed()` for graph integration tests."""
     database = Database("sqlite:///:memory:")
     seed(database)
     return database

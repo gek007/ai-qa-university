@@ -1,9 +1,6 @@
-"""LangSmith tracing setup.
+"""LangSmith/LangChain env setup so traces export when an API key is present.
 
-LangGraph + LangChain auto-export traces to LangSmith when these env vars
-are set. This module simply loads `.env` (if present) and verifies the
-required variables so problems fail loudly at startup.
-"""
+Reads `.env` and sets tracing flags; logs clearly when tracing stays off."""
 
 from __future__ import annotations
 
@@ -18,14 +15,9 @@ logger = logging.getLogger(__name__)
 
 
 def setup_tracing() -> bool:
-    """Load `.env` and enable LangSmith tracing if an API key is configured.
+    """Set LangSmith + legacy LangChain env from `LANGSMITH_API_KEY` or `LANGCHAIN_API_KEY`.
 
-    Supports both the new `LANGSMITH_*` env names and the legacy
-    `LANGCHAIN_*` names, so users with either convention work out of the box.
-
-    Returns:
-        True if tracing is enabled (API key present), False otherwise.
-    """
+    Returns whether tracing is active (key found)."""
     load_dotenv(override=False)
 
     api_key = os.getenv("LANGSMITH_API_KEY") or os.getenv("LANGCHAIN_API_KEY")

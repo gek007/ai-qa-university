@@ -1,12 +1,4 @@
-"""Unit tests for individual agent nodes.
-
-Covers:
-    - _clean_sql utility
-    - should_retry routing
-    - make_generate_sql_node: prompt selection (first vs retry), error clearing
-    - make_run_sql_node: success / failure / retry increment
-    - make_format_answer_node: success vs max-retry error branch
-"""
+"""Unit tests: `_clean_sql`, `should_retry`, and `make_*_node` factories."""
 
 from __future__ import annotations
 
@@ -26,11 +18,6 @@ from database.db import Database
 from .conftest import MockChatModel
 
 
-# ---------------------------------------------------------------------------
-# _clean_sql
-# ---------------------------------------------------------------------------
-
-
 def test_clean_sql_strips_markdown_fence() -> None:
     raw = "```sql\nSELECT * FROM students\n```"
     assert _clean_sql(raw) == "SELECT * FROM students"
@@ -42,11 +29,6 @@ def test_clean_sql_strips_trailing_semicolon_and_whitespace() -> None:
 
 def test_clean_sql_leaves_plain_sql_untouched() -> None:
     assert _clean_sql("SELECT id FROM teachers") == "SELECT id FROM teachers"
-
-
-# ---------------------------------------------------------------------------
-# should_retry
-# ---------------------------------------------------------------------------
 
 
 def test_should_retry_no_error_goes_to_format() -> None:
@@ -63,11 +45,6 @@ def test_should_retry_error_at_or_above_budget_formats() -> None:
     assert (
         should_retry({"error": "boom", "retries": MAX_RETRIES + 5}) == "format_answer"
     )
-
-
-# ---------------------------------------------------------------------------
-# make_generate_sql_node
-# ---------------------------------------------------------------------------
 
 
 def test_generate_sql_uses_initial_prompt_and_clears_error() -> None:
@@ -115,11 +92,6 @@ def test_generate_sql_strips_markdown_fence_from_llm_output() -> None:
     assert out["sql"] == "SELECT 1"
 
 
-# ---------------------------------------------------------------------------
-# make_run_sql_node
-# ---------------------------------------------------------------------------
-
-
 def test_run_sql_success_returns_rows_and_no_error(db: Database) -> None:
     node = make_run_sql_node(db)
 
@@ -147,11 +119,6 @@ def test_run_sql_failure_blocks_non_select(db: Database) -> None:
     assert out["error"] is not None
     assert "Only SELECT" in out["error"] or "SELECT" in out["error"]
     assert out["retries"] == 1
-
-
-# ---------------------------------------------------------------------------
-# make_format_answer_node
-# ---------------------------------------------------------------------------
 
 
 def test_format_answer_success_uses_answer_prompt() -> None:

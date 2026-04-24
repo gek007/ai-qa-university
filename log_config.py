@@ -1,8 +1,6 @@
-"""One-shot logging configuration for the application entry points.
+"""Root logging setup for app, seed scripts, and CLI.
 
-Console (stdout or stderr) and/or rotating log files, controlled with env vars.
-See `.env.example` and the README.
-"""
+Env-driven console and optional rotating file handlers; see `.env.example`."""
 
 from __future__ import annotations
 
@@ -18,16 +16,13 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 
 
 def _truthy(name: str, default: str = "false") -> bool:
+    """True if the env var reads as 1/true/yes/on (case-insensitive)."""
     v = (os.getenv(name) or default).strip().lower()
     return v in ("1", "true", "yes", "on")
 
 
 def configure(level: int | str | None = None) -> None:
-    """Configure root logger once; safe to call from app / populate_db / CLI.
-
-    If the root logger already has handlers, no-op (tests / other runners may
-    have configured logging already).
-    """
+    """Attach formatters/handlers to the root logger once; no-op if already configured."""
     if logging.getLogger().handlers:
         return
     load_dotenv(override=False)
@@ -60,7 +55,7 @@ def configure(level: int | str | None = None) -> None:
         else:
             log_path = log_path.resolve()
         log_path.parent.mkdir(parents=True, exist_ok=True)
-        max_bytes = int(os.getenv("LOG_MAX_BYTES", str(1_048_576)))  # 1 MiB
+        max_bytes = int(os.getenv("LOG_MAX_BYTES", str(1_048_576)))  # default 1 MiB
         backup = int(os.getenv("LOG_BACKUP_COUNT", "10"))
         fh = RotatingFileHandler(
             log_path,
@@ -70,7 +65,6 @@ def configure(level: int | str | None = None) -> None:
         )
         fh.setFormatter(formatter)
         root.addHandler(fh)
-        # Log at INFO so it appears even if debug file noise is off — only once
         _boot = logging.getLogger("log_config")
         _boot.info(
             "File logging: %s (max %d bytes, %d backup file(s))",

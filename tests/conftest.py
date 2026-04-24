@@ -1,4 +1,4 @@
-"""Make the project root importable from test modules."""
+"""Pytest bootstrap: put the repo root on `sys.path`."""
 
 from __future__ import annotations
 

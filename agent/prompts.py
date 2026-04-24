@@ -1,7 +1,4 @@
-"""Prompt templates for the QA agent.
-
-All prompts live here so they can be tuned without touching node logic.
-"""
+"""SQL and answer prompt strings; edit here to retune without changing nodes."""
 
 from __future__ import annotations
 

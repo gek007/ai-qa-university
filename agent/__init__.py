@@ -1,7 +1,3 @@
-"""LangGraph-based QA agent over any `database.db.Database`.
+"""QA agent package: compiled graph, tracing helper, and `AgentState` type.
 
-Public surface:
-    from agent.graph import build_graph
-    from agent.tracing import setup_tracing
-    from agent.state import AgentState
-"""
+`from agent.graph import build_graph` etc."""

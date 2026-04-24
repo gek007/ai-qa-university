@@ -1,4 +1,4 @@
-"""Unit tests for the DB layer: schema, seeding, joins, aggregations, guards."""
+"""`Database`: schema text, `execute` guards, seed data, example queries."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from database.populate_db import COURSES, OFFERINGS, STUDENTS, TEACHERS, seed
 
 @pytest.fixture()
 def db() -> Database:
+    """In-memory DB + `seed()` for query tests."""
     database = Database("sqlite:///:memory:")
     seed(database)
     return database

@@ -1,8 +1,4 @@
-"""Tests for LangSmith tracing setup.
-
-`setup_tracing` must fail loudly only when explicitly misconfigured; otherwise
-it simply no-ops when no API key is present.
-"""
+"""`setup_tracing`: env wiring and legacy `LANGCHAIN_*` compatibility."""
 
 from __future__ import annotations
 
@@ -23,6 +19,7 @@ _ENV_VARS = (
 
 @pytest.fixture(autouse=True)
 def _clean_tracing_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Clear LangSmith/LangChain env keys so each test sets only what it needs."""
     for name in _ENV_VARS:
         monkeypatch.delenv(name, raising=False)
 

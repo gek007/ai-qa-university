@@ -1,15 +1,7 @@
-"""Gradio front-end for the University QA agent.
+"""Gradio UI for the university QA agent (`python app.py` → http://127.0.0.1:7860).
 
-Run:
-    python app.py
-
-Opens a local web UI at http://127.0.0.1:7860 where you can ask
-natural-language questions about the university database.
-
-On first run the database at `data/university.db` is created and seeded
-automatically. LangSmith tracing is enabled when `LANGSMITH_API_KEY`
-(or `LANGCHAIN_API_KEY`) is present in `.env`.
-"""
+Seeds `data/university.db` on first run. LangSmith follows `.env` when
+`LANGSMITH_API_KEY` or `LANGCHAIN_API_KEY` is set."""
 
 from __future__ import annotations
 
@@ -39,7 +31,7 @@ EXAMPLE_QUESTIONS = [
 
 
 def _ensure_seeded(database: Database) -> None:
-    """Create the schema and seed sample data on first launch."""
+    """Ensure tables exist; seed if empty (idempotent for non-empty DBs)."""
     database.create_schema()
     with database.session() as s:
         already_seeded = s.execute(select(Teacher).limit(1)).first() is not None
@@ -51,7 +43,7 @@ def _ensure_seeded(database: Database) -> None:
 
 
 def _build_runtime() -> tuple[object, bool]:
-    """Wire tracing, database, LLM, and graph once at startup."""
+    """One-shot init: logging, optional LangSmith, DB, LLM, compiled graph. Returns (graph, tracing_on)."""
     configure()
     tracing_on = setup_tracing()
     database = Database(DEFAULT_URL)
@@ -65,7 +57,7 @@ GRAPH, TRACING_ON = _build_runtime()
 
 
 def ask(question: str) -> tuple[str, str, list]:
-    """Invoke the graph for a single question and unpack its final state."""
+    """Run the graph; return (answer, sql, results). Empty input → three empties. Re-raises on invoke failure."""
     if not question or not question.strip():
         return "", "", []
     q = question.strip()
@@ -83,6 +75,7 @@ def ask(question: str) -> tuple[str, str, list]:
 
 
 def _build_ui() -> gr.Blocks:
+    """Gradio layout: question in, answer + SQL + JSON out, examples, tracing hint."""
     with gr.Blocks(title="University QA Agent") as demo:
         gr.Markdown(
             "# University QA Agent\n"

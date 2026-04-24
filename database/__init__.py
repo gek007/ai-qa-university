@@ -1,7 +1,3 @@
-"""Database layer: ORM models, connection facade, and sample-data population.
+"""ORM models, `Database` facade, and `seed` for sample data.
 
-Public surface used by the rest of the application:
-    from database.db import Database, DEFAULT_URL
-    from database.populate_db import seed
-    from database import models  # Teacher, Student, Course, ...
-"""
+Typical: `from database.db import Database, DEFAULT_URL`, `from database.populate_db import seed`, `import database.models`."""

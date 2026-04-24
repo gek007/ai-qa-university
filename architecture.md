@@ -2,15 +2,14 @@
 
 ## Overview
 
-This system implements a natural-language question answering agent over a relational university database.
-It allows users to ask complex questions (aggregations, joins, filters) and receive accurate, human-readable answers.
+NL questions over a relational university DB: joins, filters, and aggregations are turned into SQL, executed behind guards, and summarized in plain language.
 
-The architecture is designed with the following goals:
+Goals:
 
-* **Database-agnostic design**
-* **Full traceability and debuggability**
-* **Modular and explainable components**
-* **Support for multi-step reasoning via LangGraph**
+* **DB-agnostic** — one facade; swap the URL, keep the graph.
+* **Observable** — LangSmith traces the full run when configured.
+* **Modular** — ORM, prompts, and LangGraph nodes are separate.
+* **Multi-step** — LangGraph coordinates SQL → execute → (retry) → answer.
 
 ---
 
@@ -19,258 +18,108 @@ The architecture is designed with the following goals:
 ```
 User Question
       ↓
-LangGraph Agent
-  ├── generate_sql     (LLM: NL → SQL)
-  ├── run_sql          (DB execution)
-  └── format_answer    (LLM: results → natural language)
+LangGraph
+  generate_sql   (LLM: question + schema → SQL)
+  run_sql        (read-only execute)
+  format_answer  (LLM: rows → NL, or user-facing error after cap)
       ↓
-Answer + SQL + Results
+Answer, SQL, raw rows (UI)
       ↓
-LangSmith Trace
+LangSmith (optional)
 ```
 
 ---
 
-## LangGraph Execution Model
+## LangGraph
 
-The system is implemented as a LangGraph state machine with a controlled retry loop:
+Compiled graph: `generate_sql` → `run_sql` → `should_retry` → `generate_sql` or `format_answer` → END.
 
 ```
-generate_sql → run_sql → check_error
-                         ├── no error → format_answer
-                         └── error → retry (max 2 times)
-                                      ↓
-                                format_answer (error explanation)
+generate_sql → run_sql → should_retry
+                           ├ no error     → format_answer
+                           ├ error, retries < MAX_RETRIES (2) → generate_sql
+                           └ else         → format_answer  (error explanation)
 ```
 
-### Key properties:
-
-* Errors in SQL generation are **fed back into the LLM prompt**
-* The agent can **self-correct invalid queries**
-* Final fallback always returns a **user-friendly explanation**
+* Failed execution strings go back into the next SQL prompt so the model can correct.
+* After enough failed runs (`retries` ≥ `MAX_RETRIES`), `format_answer` uses the “couldn’t answer” path instead of result-grounded text.
 
 ---
 
-## Core Components
+## Components
 
-### 1. Database Layer (`database/`)
+### 1. Database (`database/`)
 
-Encapsulates all database-specific logic.
+**Does:** ORM models, `get_schema()` for the LLM, `execute()` for read-only queries.
 
-**Responsibilities:**
-
-* Define schema using SQLAlchemy ORM
-* Provide schema introspection for the LLM
-* Execute SQL safely
-
-**Public interface:**
+**Surface:**
 
 ```python
-db.get_schema()   # → string representation of schema
-db.execute(sql)   # → list[dict]
+db.get_schema()  # str: tables, columns, FKs
+db.execute(sql)  # list[dict]; SELECT/WITH only, single statement
 ```
 
-### Design decision:
+The app never hard-codes table names for reasoning; it consumes whatever `get_schema()` returns, so the same agent code can target another schema or engine if the URL and models match.
 
-The agent interacts only with this interface, making the system **fully DB-agnostic**.
+### 2. Agent (`agent/`)
 
-Switching databases (e.g., SQLite → PostgreSQL) requires only changing the connection string.
+**State (`AgentState`, partial):** `question`, `sql`, `results`, `answer`, `error`, `retries`.
 
----
+**Nodes:**
 
-### 2. Agent Layer (`agent/`)
+| Node | Role |
+|------|------|
+| `generate_sql` | First shot or retry with prior SQL + DB error in the user message |
+| `run_sql` | `execute` + on failure: set `error`, bump `retries` |
+| `format_answer` | Normal answer from `results`, or safe messaging when retries exhausted |
+| `should_retry` (router) | After `run_sql`, returns next node name |
 
-Implements the LangGraph workflow.
+### 3. Prompts (`agent/prompts.py`)
 
-#### State
+All LLM strings live here so tuning does not require node changes.
 
-```python
-AgentState = {
-    question: str,
-    sql: str,
-    results: list,
-    answer: str,
-    error: str,
-    retries: int
-}
-```
+### 4. Tracing
 
-#### Nodes
-
-* **generate_sql**
-
-  * Converts natural language into SQL using schema context
-* **run_sql**
-
-  * Executes SQL and captures errors
-* **format_answer**
-
-  * Converts raw results into a human-readable answer
-* **retry logic**
-
-  * Determines whether to regenerate SQL based on errors
+LangChain/LangGraph emit to **LangSmith** when `LANGSMITH_API_KEY` or `LANGCHAIN_API_KEY` is set. Traces include steps, prompts, model output, SQL, and tool/DB outcomes—useful for debugging and demos.
 
 ---
 
-### 3. Prompt Design
+## Errors and Retries
 
-Prompts are isolated in `agent/prompts.py`.
-
-They include:
-
-* SQL generation instructions
-* Error-aware retry prompts
-* Answer formatting templates
-
-### Design decision:
-
-Separating prompts allows:
-
-* independent tuning
-* easier debugging
-* faster iteration without touching logic
+* DB and validation errors from `execute` are **state**, not raised past the node (broad catch so any driver message reaches the next SQL prompt).
+* **Retry budget:** `MAX_RETRIES` in `agent/nodes.py` (currently 2) gates how many times `should_retry` sends execution back to `generate_sql` before the terminal error path in `format_answer`.
+* Empty results are valid: the answer model is instructed to state that clearly.
 
 ---
 
-### 4. Tracing & Observability
+## DB-Agnostic Split
 
-Tracing is implemented via **LangSmith**.
-
-Captured automatically:
-
-* user input
-* each LangGraph node execution
-* LLM prompts and responses
-* generated SQL
-* database results
-
-### Trace flow:
-
-```
-User Input
- → generate_sql
- → run_sql
- → format_answer
- → Final Output
-```
-
-### Benefits:
-
-* full transparency of reasoning
-* easy debugging of failures
-* clear explanation during interview/demo
+* **Data:** schema DDL, `get_schema` text, `execute` policy (SELECT-only, one statement).
+* **Agent:** question → SQL → rows → natural language, independent of a specific DSN beyond the facade.
 
 ---
 
-## Error Handling Strategy
+## Tests
 
-The system handles:
+| Layer | Focus |
+|-------|--------|
+| `tests/database/` | Schema text, `execute` guards, seeded joins/aggregations |
+| `tests/agent/test_nodes.py` | `_clean_sql`, router, per-node behavior |
+| `tests/agent/test_graph.py` | Full graph, mock LLM + real in-memory SQL |
 
-* invalid SQL generation
-* empty result sets
-* ambiguous user queries
-
-### Approach:
-
-* capture DB errors
-* inject error into next prompt
-* allow LLM to self-correct
-* limit retries (max = 2)
-* gracefully degrade with explanation
+In-memory SQLite and a canned `MockChatModel` avoid network calls.
 
 ---
 
-## DB-Agnostic Design
+## Production (extensions)
 
-The system enforces separation between:
-
-* **data layer (schema, execution)**
-* **agent logic (reasoning, orchestration)**
-
-The agent:
-
-* does not depend on specific table names in code
-* receives schema dynamically via `get_schema()`
-
-This allows:
-
-* reuse with different schemas
-* minimal refactoring for new domains
+* **Reliability:** LLM timeouts, retries and backoff on API errors.
+* **Scale:** e.g. PostgreSQL, app server (e.g. FastAPI), long-lived compiled graph instance.
+* **Security:** keep read-only `execute` rules, cap rows/latency, auth on any public API.
+* **Ops / cost:** LangSmith or other APM, alert on error/retry rates; cache or smaller models only where product allows.
 
 ---
 
-## Testing Strategy
+## Summary
 
-Tests are structured in three levels:
-
-### 1. Database tests
-
-* joins across tables
-* aggregations (AVG, COUNT)
-* filtering
-
-### 2. Agent node tests
-
-* SQL generation behavior
-* retry logic
-* error handling
-
-### 3. End-to-end tests
-
-* full pipeline: question → answer
-* retry scenarios
-* complex queries
-
-All tests use:
-
-* in-memory database
-* mocked LLM
-
----
-
-## Production Considerations
-
-### Reliability
-
-* add timeouts to LLM calls
-* handle API failures gracefully
-
-### Scalability
-
-* switch to PostgreSQL
-* serve via FastAPI
-* reuse compiled LangGraph instance
-
-### Security
-
-* restrict to SELECT queries only
-* limit result size
-* enforce query timeouts
-
-### Monitoring
-
-* LangSmith tracing
-* error rate tracking
-* retry frequency alerts
-
-### Cost optimization
-
-* cache frequent queries
-* use smaller models for simple tasks
-
----
-
-## Design Summary
-
-This system prioritizes:
-
-* **clarity over complexity**
-* **modularity over tight coupling**
-* **traceability over abstraction hiding**
-
-The result is a system that is:
-
-* easy to explain
-* easy to debug
-* easy to extend
-* suitable as a foundation for production systems
+Favor **clear boundaries** (DB vs prompts vs graph), **traceability** in LangSmith, and a **small** graph: one retry loop, explicit state, and a single place to change how SQL is allowed to run.

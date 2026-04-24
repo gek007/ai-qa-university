@@ -1,9 +1,6 @@
-"""Database facade.
+"""Thin SQLAlchemy facade: `get_schema` + read-only `execute` for the agent.
 
-Exposes a thin `Database` wrapper around a SQLAlchemy engine. The agent only
-ever calls `get_schema()` and `execute()` -- swapping the underlying engine
-(SQLite, PostgreSQL, ...) is a one-line change to the connection URL.
-"""
+Swap `DATABASE_URL` to change backend without touching call sites."""
 
 from __future__ import annotations
 
@@ -26,12 +23,7 @@ DATA_DIR = PROJECT_ROOT / "data"
 
 
 def _default_url() -> str:
-    """Resolve the default DB URL.
-
-    Priority:
-        1. `DATABASE_URL` env var, if set.
-        2. `sqlite:///<project>/data/university.db` (creates `data/` on demand).
-    """
+    """`DATABASE_URL` if set, else project `data/university.db` (ensures `data/` exists)."""
     env_url = os.getenv("DATABASE_URL")
     if env_url:
         logger.debug("DATABASE_URL set from environment")
@@ -48,7 +40,7 @@ _SELECT_ONLY_RE = re.compile(r"^\s*(select|with)\b", re.IGNORECASE)
 
 
 def _log_engine_target(url: str) -> str:
-    """Return a log-safe description of the connection (no credentials)."""
+    """String for debug logs: full `sqlite:…` URL, else `scheme://host/path` without credentials."""
     if url.startswith("sqlite:"):
         return url
     parts = urlsplit(url)
@@ -57,7 +49,7 @@ def _log_engine_target(url: str) -> str:
 
 
 class Database:
-    """Minimal DB-agnostic facade used by the QA agent."""
+    """Session factory, schema DDL, schema text for prompts, and guarded SELECT execution."""
 
     def __init__(self, url: str = DEFAULT_URL) -> None:
         self.url = url
@@ -66,25 +58,21 @@ class Database:
         logger.debug("Database engine ready: %s", _log_engine_target(url))
 
     def create_schema(self) -> None:
-        """Create all tables defined on the ORM metadata."""
+        """`create_all` from ORM metadata."""
         Base.metadata.create_all(self.engine)
         logger.debug("Schema created (all tables)")
 
     def drop_schema(self) -> None:
-        """Drop all tables (primarily used in tests)."""
+        """`drop_all`; typical caller is tests or `seed(..., reset=True)`."""
         Base.metadata.drop_all(self.engine)
         logger.warning("All tables dropped (drop_schema)")
 
     def session(self) -> Session:
-        """Open a new ORM session. Caller is responsible for closing it."""
+        """New SQLAlchemy session; caller closes or uses as context manager."""
         return self._SessionFactory()
 
     def get_schema(self) -> str:
-        """Return a human- and LLM-readable description of the current schema.
-
-        Uses SQLAlchemy's dialect-agnostic Inspector so the same code works
-        across SQLite, PostgreSQL, MySQL, etc.
-        """
+        """Table/column/FK text via the Inspector (works across supported dialects)."""
         inspector = inspect(self.engine)
         lines: list[str] = []
         names = inspector.get_table_names()
@@ -104,11 +92,7 @@ class Database:
         return "\n".join(lines).strip()
 
     def execute(self, sql: str) -> list[dict[str, Any]]:
-        """Execute a read-only SQL statement and return rows as dicts.
-
-        Only SELECT / WITH (CTE) statements are allowed -- the agent should
-        never mutate data. A single statement per call is enforced.
-        """
+        """Run a single SELECT or WITH; returns row dicts. Rejects DML/DDL and multiple statements."""
         if not _SELECT_ONLY_RE.match(sql):
             logger.warning("execute blocked: not a SELECT / WITH: %r", sql[:200])
             raise ValueError("Only SELECT / WITH statements are allowed.")
