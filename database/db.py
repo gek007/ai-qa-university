@@ -143,3 +143,17 @@ if __name__ == "__main__":
     print("-----------------------")
     print("Teachers:", db.execute("SELECT * FROM teachers"))
 
+    try:
+        db.execute("DELETE FROM teachers WHERE id=1")
+    except Exception as e:
+        print("Properly blocked DELETE statement:", e)
+
+    try:
+        db.execute("SELECT * FROM students WHERE id=1")
+    except Exception as e:
+        print("Properly blocked multiple statements:", e)
+
+    try:
+        db.execute("SELECT * FROM Courses")
+    except Exception as e:
+        print("Properly blocked SELECT statement:", e)
