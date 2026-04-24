@@ -49,3 +49,7 @@ data/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# --- Local / internal docs (not published) ---
+AGENT.md
+HW Task.html.pdf
