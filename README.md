@@ -1,10 +1,12 @@
 # University QA Agent
 
-
+# Screenshot of the UI: 
 ![1776985152316](image/README/1776985152316.png)
 
+# Screenshot of db table: 
 ![1776985236997](image/README/1776985236997.png)
 
+#  logs std out and from LanchChain Smith:
 ![1776986754756](image/README/1776986754756.png)
 
 
