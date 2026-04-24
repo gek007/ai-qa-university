@@ -9,6 +9,8 @@ import os
 
 from dotenv import load_dotenv
 
+from log_config import ENV_FILE
+
 DEFAULT_PROJECT = "university-qa"
 
 logger = logging.getLogger(__name__)
@@ -18,7 +20,7 @@ def setup_tracing() -> bool:
     """Set LangSmith + legacy LangChain env from `LANGSMITH_API_KEY` or `LANGCHAIN_API_KEY`.
 
     Returns whether tracing is active (key found)."""
-    load_dotenv(override=False)
+    load_dotenv(dotenv_path=ENV_FILE, override=False)
 
     api_key = os.getenv("LANGSMITH_API_KEY") or os.getenv("LANGCHAIN_API_KEY")
     if not api_key:

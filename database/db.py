@@ -133,7 +133,7 @@ if __name__ == "__main__":
             [
                 Teacher(name="Ada Lovelace"),
                 Student(name="Alan Turing"),
-                Course(title="CS101"),
+                Course(title="LLM and AI"),
             ]
         )
         session.commit()

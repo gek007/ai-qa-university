@@ -13,6 +13,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parent
+# Always load this file — bare ``load_dotenv()`` only searches ``os.getcwd()`` (often wrong in IDEs).
+ENV_FILE = PROJECT_ROOT / ".env"
 
 _CONFIGURED = False
 
@@ -48,7 +50,7 @@ def configure(level: int | str | None = None) -> None:
     """Attach formatters/handlers to the root logger once per process."""
 
     global _CONFIGURED
-    load_dotenv(override=False)
+    load_dotenv(dotenv_path=ENV_FILE, override=False)
     if _CONFIGURED:
         return
 
@@ -64,6 +66,8 @@ def configure(level: int | str | None = None) -> None:
 
     console_on = _truthy("LOG_TO_CONSOLE", "true")
     file_on = _truthy("LOG_TO_FILE", "false")
+    added_console = False
+    added_file = False
 
     stream_name = (os.getenv("LOG_STREAM") or "stdout").strip().lower()
     stream = sys.stdout if stream_name in ("stdout", "out", "1") else sys.stderr
@@ -72,6 +76,7 @@ def configure(level: int | str | None = None) -> None:
         ch = logging.StreamHandler(stream)
         ch.setFormatter(formatter)
         root.addHandler(ch)
+        added_console = True
 
     if file_on:
         rel = os.getenv("LOG_FILE", "logs/ai-qa-university.log")
@@ -92,12 +97,11 @@ def configure(level: int | str | None = None) -> None:
             )
             fh.setFormatter(formatter)
             root.addHandler(fh)
-            logging.getLogger("log_config").info(
-                "File logging: %s (max %d bytes, %d backup file(s))",
-                log_path,
-                max_bytes,
-                backup,
-            )
+            added_file = True
+            try:
+                fh.flush()
+            except OSError:
+                pass
 
     if not root.handlers:
         ch = logging.StreamHandler(sys.stdout)
@@ -106,5 +110,14 @@ def configure(level: int | str | None = None) -> None:
         logging.getLogger("log_config").warning(
             "No LOG_TO_CONSOLE/LOG_TO_FILE enabled; using stdout as fallback"
         )
+
+    boot = logging.getLogger("log_config")
+    boot.info(
+        "Logging ready (env from %s): console=%s file=%s LOG_TO_FILE=%r",
+        ENV_FILE,
+        added_console or _root_has_stream_handler(root),
+        added_file,
+        os.getenv("LOG_TO_FILE"),
+    )
 
     _CONFIGURED = True
