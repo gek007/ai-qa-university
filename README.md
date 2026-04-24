@@ -1,14 +1,15 @@
 # University QA Agent
 
-# Screenshot of the UI: 
+
+
+## Screenshot of the UI: 
 ![1776985152316](image/README/1776985152316.png)
 
-# Screenshot of db table: 
+## Screenshot of db table: 
 ![1776985236997](image/README/1776985236997.png)
 
-#  logs std out and from LanchChain Smith:
+##  logs std out and from LanchChain Smith:
 ![1776986754756](image/README/1776986754756.png)
-
 
 
 A natural-language question-answering system over a university database, built with **LangGraph**, **SQLAlchemy**, **OpenAI GPT-4o**, and a **Gradio** UI.

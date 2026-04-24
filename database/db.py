@@ -7,12 +7,17 @@ from __future__ import annotations
 import logging
 import os
 import re
+import sys
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
 from sqlalchemy import Engine, create_engine, inspect, text
 from sqlalchemy.orm import Session, sessionmaker
+
+# IDE / `python database/db.py`: project root is not on sys.path unless we add it.
+if __name__ == "__main__" and not __package__:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from database.models import Base
 
@@ -114,3 +119,27 @@ class Database:
             rows = [dict(row) for row in result.mappings().all()]
         logger.debug("Query returned %d row(s)", len(rows))
         return rows
+
+
+if __name__ == "__main__":
+    from database.models import Course, Student, Teacher
+
+    db_url = os.getenv("DB_URL", "sqlite:///:memory:")
+    db = Database(db_url)
+    db.create_schema()
+
+    with db.session() as session:
+        session.add_all(
+            [
+                Teacher(name="Ada Lovelace"),
+                Student(name="Alan Turing"),
+                Course(title="CS101"),
+            ]
+        )
+        session.commit()
+
+    print("--- Database Schema ---")
+    print(db.get_schema())
+    print("-----------------------")
+    print("Teachers:", db.execute("SELECT * FROM teachers"))
+

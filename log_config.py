@@ -14,9 +14,9 @@ from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 
-
 def _truthy(name: str, default: str = "false") -> bool:
     """True if the env var reads as 1/true/yes/on (case-insensitive)."""
+
     v = (os.getenv(name) or default).strip().lower()
     return v in ("1", "true", "yes", "on")
 

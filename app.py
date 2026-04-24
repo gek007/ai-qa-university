@@ -32,6 +32,7 @@ EXAMPLE_QUESTIONS = [
 
 def _ensure_seeded(database: Database) -> None:
     """Ensure tables exist; seed if empty (idempotent for non-empty DBs)."""
+
     database.create_schema()
     with database.session() as s:
         already_seeded = s.execute(select(Teacher).limit(1)).first() is not None
@@ -44,6 +45,7 @@ def _ensure_seeded(database: Database) -> None:
 
 def _build_runtime() -> tuple[object, bool]:
     """One-shot init: logging, optional LangSmith, DB, LLM, compiled graph. Returns (graph, tracing_on)."""
+
     configure()
     tracing_on = setup_tracing()
     database = Database(DEFAULT_URL)
@@ -58,6 +60,7 @@ GRAPH, TRACING_ON = _build_runtime()
 
 def ask(question: str) -> tuple[str, str, list]:
     """Run the graph; return (answer, sql, results). Empty input → three empties. Re-raises on invoke failure."""
+
     if not question or not question.strip():
         return "", "", []
     q = question.strip()
@@ -76,6 +79,7 @@ def ask(question: str) -> tuple[str, str, list]:
 
 def _build_ui() -> gr.Blocks:
     """Gradio layout: question in, answer + SQL + JSON out, examples, tracing hint."""
+    
     with gr.Blocks(title="University QA Agent") as demo:
         gr.Markdown(
             "# University QA Agent\n"
