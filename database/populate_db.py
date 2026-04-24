@@ -78,6 +78,7 @@ OFFERINGS = [
 
 def _enrollments_plan() -> list[tuple[int, int, float | None]]:
     """Deterministic (student, offering, grade) rows; `None` grades simulate in-progress work."""
+
     plan: list[tuple[int, int, float | None]] = []
     base_grades = [55, 62, 70, 74, 78, 82, 85, 88, 91, 95]
 
@@ -94,6 +95,7 @@ def _enrollments_plan() -> list[tuple[int, int, float | None]]:
 
 def seed(database: Database, *, reset: bool = True) -> None:
     """Insert sample rows; with `reset`, drop and recreate schema first."""
+
     if reset:
         logger.warning("Resetting database (drop + recreate + seed)")
         database.drop_schema()

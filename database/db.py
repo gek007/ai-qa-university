@@ -24,10 +24,12 @@ DATA_DIR = PROJECT_ROOT / "data"
 
 def _default_url() -> str:
     """`DATABASE_URL` if set, else project `data/university.db` (ensures `data/` exists)."""
+
     env_url = os.getenv("DATABASE_URL")
     if env_url:
         logger.debug("DATABASE_URL set from environment")
         return env_url
+
     DATA_DIR.mkdir(exist_ok=True)
     path = (DATA_DIR / "university.db").as_posix()
     logger.debug("Using default sqlite database at data/university.db")
@@ -41,8 +43,10 @@ _SELECT_ONLY_RE = re.compile(r"^\s*(select|with)\b", re.IGNORECASE)
 
 def _log_engine_target(url: str) -> str:
     """String for debug logs: full `sqlite:…` URL, else `scheme://host/path` without credentials."""
+
     if url.startswith("sqlite:"):
         return url
+
     parts = urlsplit(url)
     host = parts.hostname or "?"
     return f"{parts.scheme}://{host}{parts.path or ''}"
@@ -59,20 +63,24 @@ class Database:
 
     def create_schema(self) -> None:
         """`create_all` from ORM metadata."""
+
         Base.metadata.create_all(self.engine)
         logger.debug("Schema created (all tables)")
 
     def drop_schema(self) -> None:
         """`drop_all`; typical caller is tests or `seed(..., reset=True)`."""
+
         Base.metadata.drop_all(self.engine)
         logger.warning("All tables dropped (drop_schema)")
 
     def session(self) -> Session:
         """New SQLAlchemy session; caller closes or uses as context manager."""
+
         return self._SessionFactory()
 
     def get_schema(self) -> str:
         """Table/column/FK text via the Inspector (works across supported dialects)."""
+
         inspector = inspect(self.engine)
         lines: list[str] = []
         names = inspector.get_table_names()
@@ -93,6 +101,7 @@ class Database:
 
     def execute(self, sql: str) -> list[dict[str, Any]]:
         """Run a single SELECT or WITH; returns row dicts. Rejects DML/DDL and multiple statements."""
+
         if not _SELECT_ONLY_RE.match(sql):
             logger.warning("execute blocked: not a SELECT / WITH: %r", sql[:200])
             raise ValueError("Only SELECT / WITH statements are allowed.")

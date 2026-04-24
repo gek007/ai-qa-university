@@ -26,6 +26,7 @@ MAX_RETRIES = 2
 
 def _clean_sql(text: str) -> str:
     """Return executable SQL: strip markdown fences and a trailing semicolon."""
+
     s = text.strip()
     if s.startswith("```"):
         lines = [ln for ln in s.splitlines() if not ln.strip().startswith("```")]
@@ -35,15 +36,14 @@ def _clean_sql(text: str) -> str:
     return s
 
 
-def make_generate_sql_node(
-    llm: BaseChatModel, schema: str
-) -> Callable[[AgentState], dict]:
+def make_generate_sql_node(llm: BaseChatModel, schema: str) -> Callable[[AgentState], dict]:
     """Build a node that maps the question (and prior failure, if any) to SQL."""
 
     system = SystemMessage(content=prompts.SQL_SYSTEM_PROMPT.format(schema=schema))
 
     def generate_sql(state: AgentState) -> dict:
         """Emit `sql` and clear `error`; on retry, include last SQL and error in the user prompt."""
+
         previous_error = state.get("error")
         if previous_error:
             logger.warning(
@@ -73,6 +73,7 @@ def make_run_sql_node(database: Database) -> Callable[[AgentState], dict]:
 
     def run_sql(state: AgentState) -> dict:
         """Execute SQL: rows on success, or empty results with `retries` + `error` (for LLM retry, not re-raised)."""
+
         try:
             rows = database.execute(state["sql"])
             return {"results": rows, "error": None}
@@ -101,6 +102,7 @@ def make_format_answer_node(llm: BaseChatModel) -> Callable[[AgentState], dict]:
 
     def format_answer(state: AgentState) -> dict:
         """After max SQL failures, use the error-style prompt; otherwise ground the answer in `results`."""
+
         if state.get("error") and state.get("retries", 0) >= MAX_RETRIES:
             logger.warning(
                 "format_answer: using user-facing error path (after %d failed SQL attempt(s))",
@@ -123,6 +125,7 @@ def make_format_answer_node(llm: BaseChatModel) -> Callable[[AgentState], dict]:
 
 def should_retry(state: AgentState) -> str:
     """Graph router after `run_sql`: next node name (`format_answer` or `generate_sql`)."""
+    
     if not state.get("error"):
         return "format_answer"
     if state.get("retries", 0) < MAX_RETRIES:

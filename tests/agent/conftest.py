@@ -28,6 +28,7 @@ class MockChatModel:
 @pytest.fixture()
 def db() -> Database:
     """In-memory SQLite + `seed()` for graph integration tests."""
+    
     database = Database("sqlite:///:memory:")
     seed(database)
     return database

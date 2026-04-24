@@ -8,6 +8,7 @@ import logging
 from typing import Optional
 
 from langchain_core.language_models import BaseChatModel
+from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 
 from agent.nodes import (
@@ -25,8 +26,6 @@ logger = logging.getLogger(__name__)
 
 def _default_llm() -> BaseChatModel:
     """`ChatOpenAI` at temperature 0; used when `build_graph` is called without an `llm`."""
-    from langchain_openai import ChatOpenAI
-
     return ChatOpenAI(model="gpt-4o", temperature=0)
 
 
