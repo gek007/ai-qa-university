@@ -15,7 +15,11 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=8.0",
+    "grandalf>=0.7",
 ]
+
+[tool.ruff.lint]
+per-file-ignores = { "agent/graph.py" = ["E402"] }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

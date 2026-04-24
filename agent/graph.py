@@ -4,6 +4,13 @@ Schema is read once at compile time and baked into the SQL system prompt."""
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
 import logging
 from typing import Optional
 
@@ -26,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 def _default_llm() -> BaseChatModel:
     """`ChatOpenAI` at temperature 0; used when `build_graph` is called without an `llm`."""
+
     return ChatOpenAI(model="gpt-4o", temperature=0)
 
 
@@ -46,7 +54,8 @@ def build_graph(database: Database, llm: Optional[BaseChatModel] = None):
     builder.add_conditional_edges(
         "run_sql",
         should_retry,
-        {"generate_sql": "generate_sql", "format_answer": "format_answer"},
+        {"generate_sql": "generate_sql",
+         "format_answer": "format_answer"},
     )
     builder.add_edge("format_answer", END)
 
