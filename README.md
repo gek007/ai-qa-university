@@ -3,14 +3,17 @@
 A natural-language question-answering system over a university database, built with **LangGraph**, **SQLAlchemy**, **OpenAI GPT-4o**, and a **Gradio** UI.
 
 
-## Screenshot of the UI: 
-![1776985152316](image/README/1776985152316.png)
+## Frontend UI screenshot: 
+![1777148340307](image/README/1777148340307.png)
 
-## Screenshot of db table: 
-![1776985236997](image/README/1776985236997.png)
+## DB Tables screenshot: 
+![1777148441308](image/README/1777148441308.png)
 
-##  logs std out and from LanchChain Smith:
+## Console logs and logs from LanchChain Smith:
 ![1776986754756](image/README/1776986754756.png)
+
+## LangGraph Agent's visual graph      
+![1777148689078](image/README/1777148689078.png)
 
 
 Ask questions like:
@@ -205,7 +208,7 @@ uv run pytest
 Expected output:
 
 ```
-33 passed in ~1.5s
+29 passed in ~6s
 ```
 
 ### Run a specific test module
@@ -226,9 +229,8 @@ uv run pytest tests/agent/test_graph.py -v
 | File | Tests | Covers |
 |---|---|---|
 | `tests/database/test_db.py` | 10 | Schema creation, row counts, multi-table joins, aggregations (AVG, COUNT), semester filtering, SELECT-only security guard, CTE support |
-| `tests/agent/test_nodes.py` | 12 | `_clean_sql`, `should_retry`, `generate_sql` (initial + retry prompt), `run_sql` (success / error), `format_answer` (success + max-retry branch) |
+| `tests/agent/test_nodes.py` | 14 | `_clean_sql`, `should_retry`, `generate_sql` (initial + retry prompt), `run_sql` (success / error), `format_answer` (success + max-retry branch) |
 | `tests/agent/test_graph.py` | 5 | Happy path, retry recovery, max-retry error answer, complex JOIN, minimal input |
-| `tests/agent/test_tracing.py` | 4 | `setup_tracing` with/without API key, legacy `LANGCHAIN_*` env var convention, custom project name |
 
 All tests use an **in-memory SQLite database** and a **mock LLM** — no real API calls, no files written.
 
@@ -314,11 +316,12 @@ No tracing code is mixed into the agent. `setup_tracing()` sets the required `LA
 
 ---
 
-## Production considerations
+## Task 8 — Production considerations
 
-If you were bringing this system to production, you would need to address:
+Below is a focused production checklist for this project:
 
 | Area | What to do |
+
 |---|---|
 | **Reliability** | Add timeouts on LLM calls (`ChatOpenAI(request_timeout=30)`); wrap `graph.invoke` in a try/except at the API boundary; implement circuit-breaking if OpenAI is down |
 | **Scalability** | Move `build_graph()` to a singleton service; serve via FastAPI with async endpoints (`graph.ainvoke`); replace SQLite with PostgreSQL for concurrent writes |
@@ -329,6 +332,7 @@ If you were bringing this system to production, you would need to address:
 | **Schema changes** | `get_schema()` is dynamic (reads live DB via `inspect()`), so schema changes are picked up automatically — no redeploy needed for the prompt |
 
 
-==========================================================
+“production-ready” means the system should be stable, able to grow, easy to monitor, and safe to deploy.
 
+---
 
