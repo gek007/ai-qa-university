@@ -318,45 +318,72 @@ No tracing code is mixed into the agent. `setup_tracing()` sets the required `LA
 
 ## Task 8 — Production considerations
 
-This project is a solid demo. To run it in production, you would still harden, scale, and operate it intentionally. The items below are **checklist ideas** — directions to explore, not features built into this repo.
+The codebase is a strong **local / learning demo**. Shipping it to real users would mean more than tuning prompts: you would **treat the LLM, DB, and API as production systems**. The points below are a **practical checklist** — things to think about, not work already done in this repo.
+
+### At a glance
+
+| Topic | In one sentence |
+|--------|-----------------|
+| **Reliability** | Don’t let slow or failing models hang the app; catch errors at the HTTP boundary. |
+| **Scalability** | Reuse the graph, prefer async + a real server database when traffic grows. |
+| **Security** | Keep the existing `SELECT`-only rule; add guardrails (limits, caps, who sees what). |
+| **Monitoring** | Use LangSmith and metrics so you see latency, errors, and “too many SQL retries.” |
+| **Deployment** | Package in containers; load secrets from a store; use managed DB in the cloud. |
+| **Cost** | Cache and route cheaper models for simple questions. |
+| **Schema** | The prompt’s schema is read from the DB, so some migrations don’t need a code redeploy. |
 
 ### Reliability
 
-- Add timeouts on LLM calls (for example `ChatOpenAI(request_timeout=30)`).
-- Wrap `graph.invoke` in `try`/`except` at the API boundary.
-- If OpenAI (or your provider) is down, use circuit breaking or graceful degradation so users get clear errors instead of hangs.
+*You want clear failure behavior when the model or network misbehaves.*
+
+- Time out LLM calls (e.g. `ChatOpenAI(request_timeout=30)`).
+- Wrap `graph.invoke` in `try` / `except` at the API layer so the client always gets a controlled response.
+- If the provider is down, consider **circuit breaking** or **degraded mode** so users see a message instead of a long hang.
 
 ### Scalability
 
-- Run `build_graph()` once and reuse it (singleton-style) in a long-lived process.
-- Serve behind something like **FastAPI** with async handlers and `graph.ainvoke`.
-- Move from **SQLite** to **PostgreSQL** (or another server DB) if you need concurrent writers or stronger ops story.
+*One process should build the graph once and serve many requests efficiently.*
+
+- Build `build_graph()` **once** and reuse it (singleton-style) in a long-lived process.
+- Put it behind a framework like **FastAPI** and use `graph.ainvoke` for async handlers.
+- Prefer **PostgreSQL** (or similar) over SQLite when you have concurrent writers or stricter operations needs.
 
 ### Security
 
-- `execute()` already blocks non-`SELECT` SQL. In production, also consider query **time limits**, **row caps**, and **column-level** rules for sensitive data.
+*Non-`SELECT` SQL is already blocked; production usually needs more than that.*
+
+- Add **per-query time limits** and **row count caps** so one bad question cannot DoS the DB.
+- If you have sensitive columns, plan **access rules** (who can see which fields).
 
 ### Monitoring
 
-- Use **LangSmith** in a production-appropriate project and retention policy.
-- Track **latency and error rate** per node; alert if **SQL retries** spike (often a prompt or schema-quality signal).
+*You need to notice drift before users complain.*
+
+- Run **LangSmith** with a production-appropriate project and data retention.
+- Measure **latency and errors per node**; **alert** when **SQL retry rate** jumps (often prompt or data-quality issues).
 
 ### Deployment
 
-- **Containerize** (for example Docker) and pin Python/deps in the image.
-- Load `OPENAI_API_KEY` and `LANGSMITH_API_KEY` from a **secrets manager** (e.g. AWS Secrets Manager, GCP Secret Manager) instead of plain env files on servers.
-- Run **managed PostgreSQL** in cloud setups instead of a file on disk.
+*Same app, boring infrastructure — that’s a good sign.*
+
+- **Docker (or similar)** with pinned Python and lockfiles in the image.
+- Store `OPENAI_API_KEY` and `LANGSMITH_API_KEY` in a **secrets manager** (e.g. AWS, GCP), not only flat files on a VM.
+- Use **managed PostgreSQL** in cloud-like deployments instead of a local SQLite file.
 
 ### Cost control
 
-- Cache hot **question → SQL** pairs (e.g. in **Redis**).
-- Route easy questions to **`gpt-4o-mini`** and reserve **`gpt-4o`** for truly complex cases.
+*Traffic gets expensive if every question hits the biggest model.*
+
+- **Cache** frequent **question → SQL** pairs (e.g. **Redis**).
+- Send easy questions to **`gpt-4o-mini`**, **reserve `gpt-4o`** (or better) for harder ones.
 
 ### Schema changes
 
-- `get_schema()` reads the live database via `inspect()`, so many schema updates flow into the LLM **without a redeploy** — still validate behavior after migrations.
+*How much do you have to redeploy when the DB changes?*
 
-*Production-ready* here means: **stable** under load, **able to grow**, **observable** when something goes wrong, and **safe** to expose beyond your laptop.
+- `get_schema()` uses SQLAlchemy `inspect()` on the **live** database, so many schema updates reach the LLM **without a new deploy** — still **test** after each migration.
+
+**“Production-ready” in practice** means: stable under load, room to grow, visible when things break, and safe enough to run outside your own machine.
 
 ---
 
