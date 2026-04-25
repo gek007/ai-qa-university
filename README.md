@@ -318,21 +318,45 @@ No tracing code is mixed into the agent. `setup_tracing()` sets the required `LA
 
 ## Task 8 — Production considerations
 
-Below is a focused production checklist for this project:
+This project is a solid demo. To run it in production, you would still harden, scale, and operate it intentionally. The items below are **checklist ideas** — directions to explore, not features built into this repo.
 
-| Area | What to do |
+### Reliability
 
-|---|---|
-| **Reliability** | Add timeouts on LLM calls (`ChatOpenAI(request_timeout=30)`); wrap `graph.invoke` in a try/except at the API boundary; implement circuit-breaking if OpenAI is down |
-| **Scalability** | Move `build_graph()` to a singleton service; serve via FastAPI with async endpoints (`graph.ainvoke`); replace SQLite with PostgreSQL for concurrent writes |
-| **Security** | The `execute()` method already blocks non-SELECT statements; additionally enforce query time limits, row-count caps, and column-level access control for sensitive data |
-| **Monitoring** | LangSmith in production mode; add latency/error-rate metrics per node; alert on retry-rate spikes (signal of prompt quality degradation) |
-| **Deployment** | Containerise with Docker; store `OPENAI_API_KEY` and `LANGSMITH_API_KEY` in a secrets manager (AWS Secrets Manager, GCP Secret Manager); use managed PostgreSQL |
-| **Cost control** | Cache frequent query→SQL pairs in Redis; use `gpt-4o-mini` for simple queries and route to `gpt-4o` only for complex ones |
-| **Schema changes** | `get_schema()` is dynamic (reads live DB via `inspect()`), so schema changes are picked up automatically — no redeploy needed for the prompt |
+- Add timeouts on LLM calls (for example `ChatOpenAI(request_timeout=30)`).
+- Wrap `graph.invoke` in `try`/`except` at the API boundary.
+- If OpenAI (or your provider) is down, use circuit breaking or graceful degradation so users get clear errors instead of hangs.
 
+### Scalability
 
-“production-ready” means the system should be stable, able to grow, easy to monitor, and safe to deploy.
+- Run `build_graph()` once and reuse it (singleton-style) in a long-lived process.
+- Serve behind something like **FastAPI** with async handlers and `graph.ainvoke`.
+- Move from **SQLite** to **PostgreSQL** (or another server DB) if you need concurrent writers or stronger ops story.
+
+### Security
+
+- `execute()` already blocks non-`SELECT` SQL. In production, also consider query **time limits**, **row caps**, and **column-level** rules for sensitive data.
+
+### Monitoring
+
+- Use **LangSmith** in a production-appropriate project and retention policy.
+- Track **latency and error rate** per node; alert if **SQL retries** spike (often a prompt or schema-quality signal).
+
+### Deployment
+
+- **Containerize** (for example Docker) and pin Python/deps in the image.
+- Load `OPENAI_API_KEY` and `LANGSMITH_API_KEY` from a **secrets manager** (e.g. AWS Secrets Manager, GCP Secret Manager) instead of plain env files on servers.
+- Run **managed PostgreSQL** in cloud setups instead of a file on disk.
+
+### Cost control
+
+- Cache hot **question → SQL** pairs (e.g. in **Redis**).
+- Route easy questions to **`gpt-4o-mini`** and reserve **`gpt-4o`** for truly complex cases.
+
+### Schema changes
+
+- `get_schema()` reads the live database via `inspect()`, so many schema updates flow into the LLM **without a redeploy** — still validate behavior after migrations.
+
+*Production-ready* here means: **stable** under load, **able to grow**, **observable** when something goes wrong, and **safe** to expose beyond your laptop.
 
 ---
 
