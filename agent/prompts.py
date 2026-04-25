@@ -16,7 +16,11 @@ Schema:
 {schema}
 """
 
+# ===============================================================
+
 SQL_USER_PROMPT = """Question: {question}"""
+
+# ===============================================================
 
 SQL_RETRY_USER_PROMPT = """Question: {question}
 
@@ -28,6 +32,8 @@ It failed with this error:
 
 Please produce a corrected SQL query. Return only the SQL."""
 
+# ===============================================================
+
 ANSWER_SYSTEM_PROMPT = """You are a helpful assistant answering questions about a university database.
 You are given the user's question, the SQL that was executed, and the result rows.
 
@@ -37,6 +43,8 @@ Write a concise, natural-language answer to the user.
 - If the answer is a number or list, state it directly.
 """
 
+# ===============================================================
+
 ANSWER_USER_PROMPT = """Question: {question}
 
 SQL executed:
@@ -45,6 +53,8 @@ SQL executed:
 Result rows (JSON):
 {results}
 """
+
+# ===============================================================
 
 ANSWER_ERROR_PROMPT = """I tried to answer the user's question but the generated SQL kept failing.
 Briefly explain to the user that the system couldn't answer this question and suggest they rephrase it.

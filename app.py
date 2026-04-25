@@ -16,7 +16,7 @@ from agent.graph import build_graph
 from agent.tracing import setup_tracing
 from database.db import DEFAULT_URL, Database
 from database.models import Teacher
-from database.populate_db import seed
+from database.seed import seed
 from log_config import configure
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ def _ensure_seeded(database: Database) -> None:
     with database.session() as s:
         already_seeded = s.execute(select(Teacher).limit(1)).first() is not None
     if not already_seeded:
-        logger.info("No teachers found; running initial populate_db (reset=False)")
+        logger.info("No teachers found; running initial seed (reset=False)")
         seed(database, reset=False)
     else:
         logger.info("Database already has data; skipping seed")

@@ -15,9 +15,9 @@ from urllib.parse import urlsplit
 from sqlalchemy import Engine, create_engine, inspect, text
 from sqlalchemy.orm import Session, sessionmaker
 
-# IDE / `python database/db.py`: project root is not on sys.path unless we add it.
-if __name__ == "__main__" and not __package__:
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
 from database.models import Base
 
@@ -141,15 +141,19 @@ if __name__ == "__main__":
     print("--- Database Schema ---")
     print(db.get_schema())
     print("-----------------------")
-    print("Teachers:", db.execute("SELECT * FROM teachers"))
 
     try:
-        db.execute("DELETE FROM teachers WHERE id=1")
+        print("Teachers:", db.execute("SELECT * FROM teachers"))
+    except Exception as e:
+        print("Error running SELECT:", e)
+
+    try:
+        db.execute("DELETE FROM teachers WHERE id=0")
     except Exception as e:
         print("Properly blocked DELETE statement:", e)
 
     try:
-        db.execute("SELECT * FROM students WHERE id=1")
+        db.execute("SELECT * FROM students WHERE id=0")
     except Exception as e:
         print("Properly blocked multiple statements:", e)
 

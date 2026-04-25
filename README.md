@@ -1,5 +1,6 @@
 # University QA Agent
 
+A natural-language question-answering system over a university database, built with **LangGraph**, **SQLAlchemy**, **OpenAI GPT-4o**, and a **Gradio** UI.
 
 
 ## Screenshot of the UI: 
@@ -11,8 +12,6 @@
 ##  logs std out and from LanchChain Smith:
 ![1776986754756](image/README/1776986754756.png)
 
-
-A natural-language question-answering system over a university database, built with **LangGraph**, **SQLAlchemy**, **OpenAI GPT-4o**, and a **Gradio** UI.
 
 Ask questions like:
 
@@ -46,7 +45,7 @@ ai-qa-university/
 ├── database/
 │   ├── models.py     # SQLAlchemy ORM models
 │   ├── db.py         # Database facade: get_schema(), execute()
-│   └── populate_db.py  # Sample data (5 teachers, 20 students, 8 courses, ...)
+│   └── seed.py  # Sample data (5 teachers, 20 students, 8 courses, ...)
 ├── agent/
 │   ├── state.py      # AgentState TypedDict
 │   ├── prompts.py    # SQL + answer prompt templates
@@ -124,7 +123,7 @@ DATABASE_URL=sqlite:///data/university.db
 ### 4. Create and populate the database
 
 ```bash
-uv run python -m database.populate_db
+uv run python -m database.seed
 ```
 
 This creates `data/university.db` and inserts:
@@ -137,7 +136,7 @@ This creates `data/university.db` and inserts:
 | course_offerings | 15 (across Fall 2024, Spring 2025, Fall 2025) |
 | enrollments | 60 (with varied grades) |
 
-> **Tip:** Re-running `python -m database.populate_db` drops and re-populates everything from scratch.
+> **Tip:** Re-running `python -m database.seed` drops and re-populates everything from scratch.
 
 ### 5. Run the application
 
@@ -237,7 +236,7 @@ All tests use an **in-memory SQLite database** and a **mock LLM** — no real AP
 
 ## Logging
 
-Configuration is in [`log_config.py`](log_config.py). It runs when you start `app.py` or `python -m database.populate_db`. If something else (e.g. `pytest`) already attached handlers to the root logger, `configure()` does nothing.
+Configuration is in [`log_config.py`](log_config.py). It runs when you start `app.py` or `python -m database.seed`. If something else (e.g. `pytest`) already attached handlers to the root logger, `configure()` does nothing.
 
 ### Where output goes
 
@@ -254,7 +253,7 @@ Configuration is in [`log_config.py`](log_config.py). It runs when you start `ap
 |--------|------------------------------|
 | **INFO** | App startup, user questions, SQL execution recovery attempts, LangSmith status, population summary |
 | **WARNING** | Dropping the schema, blocking non-SELECT SQL, max SQL retries, missing LangSmith key |
-| **ERROR** | Uncaught exceptions (e.g. `populate_db` main failure) |
+| **ERROR** | Uncaught exceptions (e.g. `database.seed` main failure) |
 | **DEBUG** | Per-query row counts, engine URL, graph compile message, `generate_sql` question preview |
 
 Example `.env`:

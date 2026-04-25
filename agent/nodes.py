@@ -95,14 +95,31 @@ def make_run_sql_node(database: Database) -> Callable[[AgentState], dict]:
     return run_sql
 
 
+# The reason the node factory function (`make_format_answer_node`) contains an inner function (`format_answer`)
+# is to "capture" the arguments or state you want to bake into the node. In this pattern:
+#   - The outer function (`make_format_answer_node`) takes configuration or dependencies (like the LLM to use).
+#   - It then defines and returns the "node" function (`format_answer`) that will be called by the graph engine.
+#   - This allows each node you create to be bound to specific settings (like a particular LLM or fixed prompt).
+# Without this pattern, it would be more awkward to pass custom dependencies (like the LLM, prompt, schema, etc)
+# into each node function when building the graph.
+
 def make_format_answer_node(llm: BaseChatModel) -> Callable[[AgentState], dict]:
-    """Build a node that produces the final natural-language `answer` or a terminal error message."""
+    """Builds and returns a node function that produces the final answer string or, after repeated SQL failure, a terminal error message.
+
+    Why is there a function inside a function? This is known as the factory pattern or closure pattern.
+    The outer function (`make_format_answer_node`) accepts dependencies or configuration (here, the language model to use).
+    It then creates (defines) an inner function (`format_answer`) that performs the actual node logic,
+    with automatic access to the variables from the outer function's scope (like `llm`, `system`).
+
+    This means when you call `make_format_answer_node(llm)` you get back a ready-to-use function,
+    already tied to the `llm` you passed in. The LangGraph graph expects nodes as pure functions of state,
+    but factory functions allow us to supply dependencies when the graph is assembled—clean, safe, and testable.
+    """
 
     system = SystemMessage(content=prompts.ANSWER_SYSTEM_PROMPT)
 
     def format_answer(state: AgentState) -> dict:
-        """After max SQL failures, use the error-style prompt; otherwise ground the answer in `results`."""
-
+        """After max SQL failures, use the error-style prompt; otherwise, generate the answer using results."""
         if state.get("error") and state.get("retries", 0) >= MAX_RETRIES:
             logger.warning(
                 "format_answer: using user-facing error path (after %d failed SQL attempt(s))",

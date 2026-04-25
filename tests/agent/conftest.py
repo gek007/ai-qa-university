@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
 from typing import Any, Iterable
 
 import pytest
 from langchain_core.messages import AIMessage, BaseMessage
 
 from database.db import Database
-from database.populate_db import seed
+from database.seed import seed
+
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 
 class MockChatModel:
@@ -28,7 +34,7 @@ class MockChatModel:
 @pytest.fixture()
 def db() -> Database:
     """In-memory SQLite + `seed()` for graph integration tests."""
-    
+
     database = Database("sqlite:///:memory:")
     seed(database)
     return database

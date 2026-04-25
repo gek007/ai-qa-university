@@ -5,13 +5,13 @@ from __future__ import annotations
 import pytest
 
 from database.db import Database
-from database.populate_db import COURSES, OFFERINGS, STUDENTS, TEACHERS, seed
+from database.seed import COURSES, OFFERINGS, STUDENTS, TEACHERS, seed
 
 
 @pytest.fixture()
 def db() -> Database:
     """In-memory DB + `seed()` for query tests."""
-    
+
     database = Database("sqlite:///:memory:")
     seed(database)
     return database
@@ -28,9 +28,8 @@ def test_seeded_entity_counts(db: Database) -> None:
     assert db.execute("SELECT COUNT(*) AS n FROM teachers")[0]["n"] == len(TEACHERS)
     assert db.execute("SELECT COUNT(*) AS n FROM students")[0]["n"] == len(STUDENTS)
     assert db.execute("SELECT COUNT(*) AS n FROM courses")[0]["n"] == len(COURSES)
-    assert (
-        db.execute("SELECT COUNT(*) AS n FROM course_offerings")[0]["n"]
-        == len(OFFERINGS)
+    assert db.execute("SELECT COUNT(*) AS n FROM course_offerings")[0]["n"] == len(
+        OFFERINGS
     )
     enrollments_count = db.execute("SELECT COUNT(*) AS n FROM enrollments")[0]["n"]
     assert enrollments_count == len(STUDENTS) * 3
@@ -109,9 +108,7 @@ def test_execute_rejects_multiple_statements(db: Database) -> None:
 
 
 def test_execute_allows_cte(db: Database) -> None:
-    rows = db.execute(
-        "WITH t AS (SELECT COUNT(*) AS n FROM students) SELECT n FROM t"
-    )
+    rows = db.execute("WITH t AS (SELECT COUNT(*) AS n FROM students) SELECT n FROM t")
     assert rows == [{"n": len(STUDENTS)}]
 
 

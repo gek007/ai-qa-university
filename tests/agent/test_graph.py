@@ -47,6 +47,7 @@ def test_retry_path_recovers_from_bad_sql(db: Database) -> None:
 
 def test_max_retries_routes_to_error_answer(db: Database) -> None:
     # `MAX_RETRIES` bad SQLs, then the final user-facing answer string.
+
     bad_sqls = ["SELECT nope FROM nowhere"] * MAX_RETRIES
     final_answer = "Sorry, I couldn't answer that question. Please rephrase."
     llm = MockChatModel([*bad_sqls, final_answer])
@@ -61,6 +62,7 @@ def test_max_retries_routes_to_error_answer(db: Database) -> None:
 
 def test_graph_handles_complex_join_question(db: Database) -> None:
     """Multi-table SQL against seeded data returns one aggregated row."""
+
     complex_sql = (
         "SELECT c.title AS course, AVG(e.grade) AS avg_grade "
         "FROM enrollments e "
@@ -71,6 +73,7 @@ def test_graph_handles_complex_join_question(db: Database) -> None:
         "ORDER BY avg_grade DESC "
         "LIMIT 1"
     )
+
     llm = MockChatModel(
         [complex_sql, "The course with the highest average grade is ..."]
     )
@@ -86,6 +89,7 @@ def test_graph_handles_complex_join_question(db: Database) -> None:
 
 def test_graph_only_requires_question_in_input(db: Database) -> None:
     """Invoke with only `question` still produces `answer` downstream."""
+    
     llm = MockChatModel(["SELECT 1 AS x", "The answer is 1."])
     graph = build_graph(db, llm=llm)
 

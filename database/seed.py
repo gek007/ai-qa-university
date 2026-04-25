@@ -1,12 +1,21 @@
 """ORM seed: deterministic teachers, students, courses, offerings, enrollments.
 
-CLI: `python -m database.populate_db`."""
+CLI: `python -m database.seed` from the repo root, or run this file directly in the IDE."""
 
+# This import ensures that all type hints in the file are treated as string literals by default,
+# which allows using types before they are actually defined (forward references).
+# This is useful for type hinting when a type is not yet defined at the point where it is referenced.
 from __future__ import annotations
 
-import logging
+import sys
+from pathlib import Path
 
-from sqlalchemy.orm import Session
+# Running this file as a script leaves the parent of `database/` off `sys.path`; add the repo root.
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+import logging
 
 from database.db import Database
 from database.models import Course, CourseOffering, Enrollment, Student, Teacher
@@ -103,7 +112,7 @@ def seed(database: Database, *, reset: bool = True) -> None:
         logger.info("Seeding into existing schema (no drop)")
     database.create_schema()
 
-    with database.session() as session:  # type: Session
+    with database.session() as session:
         teachers = [Teacher(name=name) for name in TEACHERS]
         students = [Student(name=name) for name in STUDENTS]
         courses = [Course(title=title) for title in COURSES]
